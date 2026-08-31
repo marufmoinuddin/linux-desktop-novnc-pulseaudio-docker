@@ -1,0 +1,35 @@
+# nginx server block for linux-desktop-novnc-pulseaudio.
+# Rendered by entry_point.sh via envsubst (PORT / WEBSOCKIFY_PORT / AUDIO_SERVER).
+# No :80 default site — this is the only listener.
+server {
+    listen ${PORT};
+    server_name _;
+
+    root /usr/share/novnc;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # noVNC -> websockify -> tigervnc (127.0.0.1:VNC_PORT)
+    location /websockify {
+        proxy_pass http://127.0.0.1:${WEBSOCKIFY_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+
+    # jsmpeg audio -> Go relay (127.0.0.1:AUDIO_SERVER/audio)
+    location /audio {
+        proxy_pass http://127.0.0.1:${AUDIO_SERVER}/audio;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Origin $http_origin;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+}

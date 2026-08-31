@@ -1,0 +1,11 @@
+# actionlint configuration.
+#
+# The `secrets` context IS officially supported in step-level `if:` conditions
+# (see https://docs.github.com/en/actions/learn-github-actions/contexts#contexts-availability),
+# which is required to gate the optional Docker Hub login step
+# (`if: ${{ secrets.DOCKERHUB_USERNAME != '' }}`). actionlint flags this as a
+# false positive, so we ignore that specific diagnostic for all workflows.
+paths:
+  .github/workflows/**/*.yml:
+    ignore:
+      - 'context "secrets" is not allowed here'

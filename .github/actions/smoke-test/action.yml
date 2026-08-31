@@ -1,0 +1,180 @@
+name: Smoke test
+description: >-
+  Runs the linux-desktop-novnc-pulseaudio smoke test against a built image:
+  unprivileged run, HTTP 200 + noVNC, /audio WebSocket handshake (101), binary
+  audio frames, supervisor programs RUNNING, no fatal errors, then cleanup.
+inputs:
+  image:
+    description: Image reference to test (e.g. ghcr.io/owner/image:sha)
+    required: true
+  vnc_passwd:
+    description: VNC password to use for the test container
+    required: false
+    default: smoke-test-pass
+
+runs:
+  using: composite
+  steps:
+    - name: Run smoke test
+      shell: bash
+      timeout-minutes: 20
+      run: |
+        set -euo pipefail
+
+        IMAGE="${{ inputs.image }}"
+        VNC_PASSWD="${{ inputs.vnc_passwd }}"
+        CID="smoke-$(date +%s)-$RANDOM"
+        LOG_FILE="${RUNNER_TEMP:-/tmp}/smoke-${CID}.log"
+        INDEX_FILE="${RUNNER_TEMP:-/tmp}/smoke-${CID}-index.html"
+
+        refresh_logs() {
+          docker logs "$CID" > "$LOG_FILE" 2>&1 || true
+        }
+
+        cleanup() {
+          set +e
+          refresh_logs
+          docker rm -f "$CID" >/dev/null 2>&1
+          set -e
+        }
+        trap cleanup EXIT
+
+        echo "==> Starting container ${CID} from ${IMAGE} (unprivileged)"
+        docker run -d --name "$CID" \
+          -e VNC_PASSWD="$VNC_PASSWD" \
+          -e PORT=10000 \
+          -e WEBSOCKIFY_PORT=6900 \
+          -e VNC_PORT=5900 \
+          -e AUDIO_SERVER=1699 \
+          -e FFMPEG_UDP_PORT=10000 \
+          -e SCREEN_WIDTH=1024 \
+          -e SCREEN_HEIGHT=768 \
+          -p 127.0.0.1::10000 \
+          "$IMAGE"
+
+        HOST_PORT="$(docker port "$CID" 10000/tcp | sed 's/.*://')"
+        echo "==> Container listening on 127.0.0.1:${HOST_PORT}"
+
+        # (a) GET / -> HTTP 200 and page contains "noVNC"
+        HTTP_OK=""
+        for _ in $(seq 1 60); do
+          if curl -fsS "http://127.0.0.1:${HOST_PORT}/" -o "$INDEX_FILE" 2>/dev/null; then
+            HTTP_OK=1
+            break
+          fi
+          sleep 2
+        done
+        if [ -z "$HTTP_OK" ]; then
+          echo "FAIL: GET / never returned HTTP 200"
+          refresh_logs
+          tail -50 "$LOG_FILE"
+          exit 1
+        fi
+        if ! grep -qi "noVNC" "$INDEX_FILE"; then
+          echo "FAIL: page does not contain 'noVNC'"
+          exit 1
+        fi
+        echo "PASS: GET / returned 200 and page contains 'noVNC'"
+
+        # (b) WebSocket handshake to /audio with an Origin header -> HTTP 101
+        # --max-time: after a 101 upgrade curl keeps the connection open, so
+        # without a timeout this step would hang.
+        WS_CODE="$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' \
+          -H 'Connection: Upgrade' \
+          -H 'Upgrade: websocket' \
+          -H 'Sec-WebSocket-Version: 13' \
+          -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
+          -H "Origin: http://127.0.0.1:${HOST_PORT}" \
+          "http://127.0.0.1:${HOST_PORT}/audio")"
+        if [ "$WS_CODE" != "101" ]; then
+          echo "FAIL: /audio handshake returned ${WS_CODE} (expected 101)"
+          exit 1
+        fi
+        echo "PASS: /audio WebSocket handshake returned 101"
+
+        # (c) Receive binary frames over the WebSocket (raw client, no deps)
+        python3 - "$HOST_PORT" <<'PYEOF'
+        import base64, os, socket, sys, time
+
+        host_port = int(sys.argv[1])
+        s = socket.create_connection(("127.0.0.1", host_port), timeout=10)
+        key = base64.b64encode(os.urandom(16)).decode()
+        req = (
+            "GET /audio HTTP/1.1\r\n"
+            f"Host: 127.0.0.1:{host_port}\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            f"Origin: http://127.0.0.1:{host_port}\r\n"
+            "\r\n"
+        )
+        s.sendall(req.encode())
+        resp = s.recv(4096).decode(errors="replace")
+        if "101" not in resp.split("\r\n")[0]:
+            print("FAIL: handshake not 101")
+            sys.exit(1)
+
+        s.settimeout(15)
+        got_binary = False
+        end = time.time() + 15
+        while time.time() < end:
+            try:
+                b1 = s.recv(1)
+                if not b1:
+                    break
+                opcode = b1[0] & 0x0F
+                b2 = s.recv(1)[0]
+                length = b2 & 0x7F
+                if length == 126:
+                    length = int.from_bytes(s.recv(2), "big")
+                elif length == 127:
+                    length = int.from_bytes(s.recv(8), "big")
+                payload = b""
+                while len(payload) < length:
+                    chunk = s.recv(length - len(payload))
+                    if not chunk:
+                        break
+                    payload += chunk
+                if opcode == 2 and len(payload) > 0:
+                    got_binary = True
+                    print(f"PASS: received binary frame opcode=2 len={len(payload)}")
+                    break
+            except socket.timeout:
+                break
+            except Exception as exc:
+                print(f"read error: {exc}")
+                break
+        if not got_binary:
+            print("FAIL: no binary frames received within 15s")
+            sys.exit(1)
+        PYEOF
+
+        # (d) docker logs: all supervisor programs entered RUNNING, no fatal errors
+        refresh_logs
+        for _ in $(seq 1 30); do
+          RUNNING="$(grep -c 'entered RUNNING state' "$LOG_FILE" || true)"
+          if [ "${RUNNING:-0}" -ge 9 ]; then
+            break
+          fi
+          sleep 2
+          refresh_logs
+        done
+
+        for prog in xvfb dbus ui vnc novnc audioserver nginx pulseaudio ffmpeg; do
+          if ! grep -q "success: ${prog} entered RUNNING state" "$LOG_FILE"; then
+            echo "FAIL: supervisor program '${prog}' did not enter RUNNING state"
+            tail -80 "$LOG_FILE"
+            exit 1
+          fi
+        done
+        echo "PASS: all 9 supervisor programs entered RUNNING state"
+
+        if grep -E "entered FATAL state|panic:|fatal error:|segmentation fault" "$LOG_FILE"; then
+          echo "FAIL: fatal errors found in container logs"
+          exit 1
+        fi
+        echo "PASS: no fatal errors in container logs"
+
+        # (e) kill + remove handled by the cleanup trap
+        echo "==> Smoke test passed; removing container ${CID}"

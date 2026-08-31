@@ -14,6 +14,94 @@ open-source, non-privileged rebuild of this container family.
 > committed here; the docs below contain everything needed to reproduce the
 > findings.
 
+## Images
+
+Nine image variants are built and published — 3 base OS × 3 desktop
+environments — all with noVNC + PulseAudio streaming audio. **No
+`--privileged` is required** (unlike the original image); `--shm-size 1g` is
+recommended for the desktop session.
+
+| OS \ DE | KDE | GNOME | Xfce |
+|---|---|---|---|
+| **Ubuntu 24.04** | `linux-desktop-novnc-pulseaudio-ubuntu-kde` | `linux-desktop-novnc-pulseaudio-ubuntu-gnome` | `linux-desktop-novnc-pulseaudio-ubuntu-xfce` |
+| **Fedora 41** | `linux-desktop-novnc-pulseaudio-fedora-kde` | `linux-desktop-novnc-pulseaudio-fedora-gnome` | `linux-desktop-novnc-pulseaudio-fedora-xfce` |
+| **Arch Linux** | `linux-desktop-novnc-pulseaudio-arch-kde` | `linux-desktop-novnc-pulseaudio-arch-gnome` | `linux-desktop-novnc-pulseaudio-arch-xfce` |
+
+### CI status
+
+| Workflow | Status |
+|---|---|
+| ubuntu-kde | [![build-ubuntu-kde](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-kde.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-kde.yml) |
+| ubuntu-gnome | [![build-ubuntu-gnome](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-gnome.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-gnome.yml) |
+| ubuntu-xfce | [![build-ubuntu-xfce](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-xfce.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-xfce.yml) |
+| fedora-kde | [![build-fedora-kde](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-kde.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-kde.yml) |
+| fedora-gnome | [![build-fedora-gnome](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-gnome.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-gnome.yml) |
+| fedora-xfce | [![build-fedora-xfce](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-xfce.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-xfce.yml) |
+| arch-kde | [![build-arch-kde](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-arch-kde.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-arch-kde.yml) |
+| arch-gnome | [![build-arch-gnome](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-arch-gnome.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-arch-gnome.yml) |
+| arch-xfce | [![build-arch-xfce](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-arch-xfce.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-arch-xfce.yml) |
+
+## Usage
+
+```bash
+# Xfce on Ubuntu (the classic flavor)
+docker run -d --name desktop --shm-size 1g \
+  -e VNC_PASSWD=secret \
+  -p 8080:8080 \
+  ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-xfce:latest
+```
+
+Then open <http://localhost:8080> — noVNC loads and audio streams automatically.
+
+| Image | `docker run` example |
+|---|---|
+| ubuntu-kde | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-kde:latest` |
+| ubuntu-gnome | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-gnome:latest` |
+| ubuntu-xfce | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-xfce:latest` |
+| fedora-kde | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-fedora-kde:latest` |
+| fedora-gnome | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-fedora-gnome:latest` |
+| fedora-xfce | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-fedora-xfce:latest` |
+| arch-kde | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-arch-kde:latest` |
+| arch-gnome | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-arch-gnome:latest` |
+| arch-xfce | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-arch-xfce:latest` |
+
+### Environment variables
+
+| Env | Default | Effect |
+|---|---|---|
+| `VNC_PASSWD` | random (printed once) | VNC auth password |
+| `PORT` | `8080` | nginx listen port (web UI + `/audio`) |
+| `WEBSOCKIFY_PORT` | `6900` | websockify listen (internal) |
+| `VNC_PORT` | `5900` | tigervnc RFB port (bound to 127.0.0.1) |
+| `AUDIO_SERVER` | `1699` | Go relay HTTP/WS port (`AUDIO_PORT` accepted as an alias) |
+| `FFMPEG_UDP_PORT` | `10000` | UDP audio port (ffmpeg → relay) |
+| `SCREEN_WIDTH` / `SCREEN_HEIGHT` | `1600` / `900` | resolution |
+| `SCREEN_DEPTH` | `24` | color depth |
+| `SCREEN_DPI` | `96` | dpi |
+| `DISPLAY` | `:99` | headless display |
+
+### Security baseline
+
+- Runs **without `--privileged`**.
+- `Xvfb` uses `-nolisten tcp` (unix socket only); tigervnc (`x0vncserver`)
+  binds `127.0.0.1`.
+- nginx `:80` default site removed; only `$PORT` is exposed.
+- Dedicated `ubuntu` user (uid/gid 1001) with passwordless sudo; no
+  world-writable `/etc/passwd`.
+- `HEALTHCHECK` curls `http://localhost:${PORT:-8080}/`.
+- `LANG=C.UTF-8` and `TZ` are set.
+
+### CI
+
+Each image has its own workflow (`.github/workflows/build-<os>-<de>.yml`):
+push to `main`, pull requests (build + smoke test only, never publish), tags
+`v*`, `workflow_dispatch`, and a nightly `schedule`. Images are built for
+`linux/amd64,linux/arm64` with buildx GHA cache and published to GHCR (and
+optionally Docker Hub when the `DOCKERHUB_USERNAME` / `DOCKERHUB_PASSWORD`
+secrets are set). A shared composite action (`.github/actions/smoke-test`)
+runs the end-to-end smoke test: HTTP 200 + noVNC, `/audio` WebSocket handshake
+(101), binary audio frames, supervisor programs RUNNING, no fatal errors.
+
 ## Quick facts
 
 | Property | Value |
