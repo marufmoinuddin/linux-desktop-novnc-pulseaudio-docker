@@ -44,8 +44,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check Docker Hub secrets
+        id: dockerhub
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_PASS: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          if [ -n "$DH_USER" ] && [ -n "$DH_PASS" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Log in to Docker Hub (optional)
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_PASSWORD != '' }}
+        if: steps.dockerhub.outputs.available == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -67,7 +79,7 @@ jobs:
             TAGS="${TAGS},ghcr.io/${OWNER}/${IMG}:latest"
           fi
           TAGS="${TAGS},ghcr.io/${OWNER}/${IMG}:${OS}-latest"
-          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_PASSWORD }}" ]; then
+          if [ "${{ steps.dockerhub.outputs.available }}" = "true" ]; then
             DH="docker.io/marufmoinuddin/${IMG}"
             TAGS="${TAGS},${DH}:${SHA}"
             if [ "${{ github.event_name }}" = "pull_request" ]; then
