@@ -1,4 +1,4 @@
-name: Build & publish linux-desktop-novnc-pulseaudio-fedora-kde
+name: build-fedora-kde
 
 on:
   schedule:
