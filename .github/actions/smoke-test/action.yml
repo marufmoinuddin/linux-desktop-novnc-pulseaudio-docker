@@ -78,14 +78,16 @@ runs:
 
         # (b) WebSocket handshake to /audio with an Origin header -> HTTP 101
         # --max-time: after a 101 upgrade curl keeps the connection open, so
-        # without a timeout this step would hang.
+        # without a timeout this step would hang. Note curl then exits non-zero
+        # (28) even though the handshake succeeded — `|| true` keeps `set -e`
+        # from killing the step; the code is captured via -w.
         WS_CODE="$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' \
           -H 'Connection: Upgrade' \
           -H 'Upgrade: websocket' \
           -H 'Sec-WebSocket-Version: 13' \
           -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
           -H "Origin: http://127.0.0.1:${HOST_PORT}" \
-          "http://127.0.0.1:${HOST_PORT}/audio")"
+          "http://127.0.0.1:${HOST_PORT}/audio" || true)"
         if [ "$WS_CODE" != "101" ]; then
           echo "FAIL: /audio handshake returned ${WS_CODE} (expected 101)"
           exit 1

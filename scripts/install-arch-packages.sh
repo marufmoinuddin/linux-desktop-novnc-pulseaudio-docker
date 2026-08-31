@@ -6,7 +6,28 @@ set -euo pipefail
 
 DE="${1:-xfce}"
 
-pacman -Syu --noconfirm
+# Ensure the pacman keyring is initialized/populated. The archlinux base image
+# ships one already, so this is a cheap idempotent guard against stale/missing
+# keys (a common cause of `pacman -Syu` failures in CI).
+if [ ! -d /etc/pacman.d/gnupg ] || [ -z "$(ls -A /etc/pacman.d/gnupg 2>/dev/null)" ]; then
+  pacman-key --init
+  pacman-key --populate archlinux
+fi
+
+# Full system upgrade with retries — mirrors are occasionally flaky in CI.
+upgraded=0
+for attempt in 1 2 3 4 5; do
+  if pacman -Syu --noconfirm --needed; then
+    upgraded=1
+    break
+  fi
+  echo "pacman -Syu attempt ${attempt} failed; retrying in 10s..." >&2
+  sleep 10
+done
+if [ "${upgraded}" != "1" ]; then
+  echo "pacman -Syu failed after 5 attempts" >&2
+  exit 1
+fi
 
 # Common runtime packages (mapped to Arch names).
 pacman -S --noconfirm --needed \

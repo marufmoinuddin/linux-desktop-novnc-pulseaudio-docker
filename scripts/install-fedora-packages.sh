@@ -7,12 +7,12 @@ set -euo pipefail
 DE="${1:-xfce}"
 
 # Common runtime packages (mapped to Fedora names; ffmpeg-free is in the
-# default repos, no RPM Fusion needed).
+# default repos, no RPM Fusion needed; websockify ships as python3-websockify).
 dnf --setopt=install_weak_deps=False --assumeyes install \
-  sudo supervisor dbus-x11 xorg-x11-server-Xvfb xorg-x11-utils xorg-x11-server-utils xterm curl \
-  tigervnc-server novnc websockify \
+  sudo supervisor dbus-x11 xorg-x11-server-Xvfb xdpyinfo xrandr xset xterm curl openssl \
+  tigervnc-server novnc python3-websockify \
   pulseaudio ffmpeg-free nginx gettext \
-  dejavu-sans-fonts dejavu-serif-fonts liberation-fonts \
+  dejavu-sans-fonts dejavu-serif-fonts liberation-fonts-all \
   alsa-plugins-pulseaudio
 
 # Desktop environment.

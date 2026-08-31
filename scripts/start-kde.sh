@@ -17,4 +17,14 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
-exec dbus-run-session -- startplasma-x11
+# Plasma 5 uses startplasma-x11; Plasma 6 (Fedora 41+, Arch) uses startplasma.
+if command -v startplasma-x11 >/dev/null 2>&1; then
+  LAUNCHER=startplasma-x11
+elif command -v startplasma >/dev/null 2>&1; then
+  LAUNCHER=startplasma
+else
+  echo "no Plasma session launcher found (startplasma-x11/startplasma)" >&2
+  exit 1
+fi
+
+exec dbus-run-session -- "${LAUNCHER}"

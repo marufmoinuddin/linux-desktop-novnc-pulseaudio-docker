@@ -43,6 +43,9 @@ chown ubuntu:ubuntu "${XDG_RUNTIME_DIR}" 2>/dev/null || true
 mkdir -p /run/dbus
 chmod 755 /run/dbus
 
+# systemd-logind runtime dir (GNOME sessions require logind).
+mkdir -p /run/systemd
+
 # Render the nginx server block from the template (envsubst).
 mkdir -p /etc/nginx/conf.d
 envsubst '${PORT} ${WEBSOCKIFY_PORT} ${AUDIO_SERVER}' \
