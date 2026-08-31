@@ -98,7 +98,8 @@ jobs:
         with:
           context: .
           file: ${{ env.DOCKERFILE }}
-          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          # archlinux:latest is amd64-only (no official arm64 image), so arch builds are single-platform.
+          platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
