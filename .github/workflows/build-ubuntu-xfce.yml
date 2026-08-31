@@ -1,11 +1,6 @@
 name: Build & publish linux-desktop-novnc-pulseaudio-ubuntu-xfce
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
-  pull_request:
-    branches: [main]
   schedule:
     - cron: '0 3 1 * *'
   workflow_dispatch:
