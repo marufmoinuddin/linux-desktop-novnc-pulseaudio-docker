@@ -29,13 +29,22 @@ if [ "${upgraded}" != "1" ]; then
   exit 1
 fi
 
-# Common runtime packages (mapped to Arch names).
+# Common runtime packages (mapped to Arch names). novnc/websockify are not in
+# the official Arch repos (AUR-only); noVNC is fetched from GitHub in the
+# Dockerfile and websockify is installed via pip below.
 pacman -S --noconfirm --needed \
-  sudo supervisor dbus xorg-server-xvfb xorg-xrandr xterm curl \
-  tigervnc novnc websockify \
+  sudo supervisor dbus xorg-server-xvfb xorg-xrandr xterm curl python-pip \
+  tigervnc \
   pulseaudio ffmpeg nginx gettext \
   ttf-dejavu \
   alsa-plugins
+
+# websockify (WebSocket proxy for noVNC) is AUR-only; install from PyPI into a
+# venv so its Python deps (urllib3 etc.) don't conflict with Arch's system
+# Python packages (e.g. python-urllib3 pulled in by the DE groups).
+python -m venv /opt/websockify
+/opt/websockify/bin/pip install websockify
+ln -sf /opt/websockify/bin/websockify /usr/local/bin/websockify
 
 # Desktop environment (groups).
 case "${DE}" in

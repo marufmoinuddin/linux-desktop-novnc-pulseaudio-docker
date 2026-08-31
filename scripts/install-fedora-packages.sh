@@ -24,7 +24,9 @@ case "${DE}" in
     dnf --setopt=install_weak_deps=False --assumeyes install gnome-session gnome-shell
     ;;
   xfce)
-    dnf --setopt=install_weak_deps=False --assumeyes install xfce4
+    # Fedora has no `xfce4` meta-package; install the core Xfce session pieces.
+    dnf --setopt=install_weak_deps=False --assumeyes install \
+      xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-settings xfconf xfce4-terminal thunar
     ;;
   *)
     echo "Unknown desktop environment: ${DE}" >&2
