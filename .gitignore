@@ -1,0 +1,11 @@
+# build artifacts
+/audio-bridge
+*.exe
+
+# editor / OS junk
+*.swp
+.DS_Store
+
+# local evidence artifacts (large extracted layers) — never commit these
+/rootfs/
+/*.tar
