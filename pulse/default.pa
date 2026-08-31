@@ -1,0 +1,67 @@
+#!/usr/bin/pulseaudio -nF
+#
+# default.pa for linux-desktop-novnc-pulseaudio — deterministic headless audio.
+#
+# Why this exists (the bug it fixes):
+#   Stock PulseAudio only creates an "auto_null" sink lazily, and when it does
+#   it selects its own sample rate (48 kHz). The capture pipeline
+#   (ffmpeg -> audiobridge -> browser jsmpeg) therefore depended on a sink that
+#   may not exist the moment ffmpeg starts -> `-f pulse -i default` could fail,
+#   leaving the browser with no audio until a supervisor restart won the race.
+#
+#   We load a fixed null sink (audio_bridge) at 44.1 kHz stereo on daemon start.
+#   Every application plays to it (it is the default sink), ffmpeg captures its
+#   monitor source, and the rest of the modules behave like stock PulseAudio.
+
+### Capture sink first: deterministic, always present.
+load-module module-null-sink sink_name=audio_bridge rate=44100 channels=2
+
+### Hardware detection (a real card can still be used if one ever appears)
+.ifexists module-udev-detect.so
+load-module module-udev-detect
+.else
+load-module module-detect
+.endif
+
+### Restore volumes / devices / cards across restarts
+load-module module-device-restore
+load-module module-stream-restore
+load-module module-card-restore
+load-module module-augment-properties
+
+.ifexists module-switch-on-port-available.so
+load-module module-switch-on-port-available
+.endif
+
+### Bluetooth (no-op when no hardware)
+.ifexists module-bluetooth-policy.so
+load-module module-bluetooth-policy
+.endif
+.ifexists module-bluetooth-discover.so
+load-module module-bluetooth-discover
+.endif
+
+### Keep streams alive when the sink disappears
+.ifexists module-rescue-streams.so
+load-module module-rescue-streams
+.endif
+
+load-module module-intended-roles
+.ifexists module-suspend-on-idle.so
+load-module module-suspend-on-idle
+.endif
+
+### Protocols
+.ifexists module-dbus-protocol.so
+load-module module-dbus-protocol
+.endif
+load-module module-native-protocol-unix
+
+### Event sounds
+.ifexists module-position-event-sounds.so
+load-module module-position-event-sounds
+.endif
+
+### Route everything through the bridge so its monitor is the capture source.
+set-default-sink audio_bridge
+set-default-source audio_bridge.monitor

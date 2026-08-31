@@ -75,6 +75,8 @@ Then open <http://localhost:8080> — noVNC loads and audio streams automaticall
 | `VNC_PORT` | `5900` | tigervnc RFB port (bound to 127.0.0.1) |
 | `AUDIO_SERVER` | `1699` | Go relay HTTP/WS port (`AUDIO_PORT` accepted as an alias) |
 | `FFMPEG_UDP_PORT` | `10000` | UDP audio port (ffmpeg → relay) |
+| `AUDIO_CAPTURE_SOURCE` | `audio_bridge.monitor` | PulseAudio source ffmpeg records (falls back to `default`) |
+| `AUDIO_BITRATE` | `128k` | MP2 audio bitrate for the streamed MPEG-TS |
 | `SCREEN_WIDTH` / `SCREEN_HEIGHT` | `1600` / `900` | resolution |
 | `SCREEN_DEPTH` | `24` | color depth |
 | `SCREEN_DPI` | `96` | dpi |
@@ -93,14 +95,32 @@ Then open <http://localhost:8080> — noVNC loads and audio streams automaticall
 
 ### CI
 
-Each image has its own workflow (`.github/workflows/build-<os>-<de>.yml`):
-push to `main`, pull requests (build + smoke test only, never publish), tags
-`v*`, `workflow_dispatch`, and a nightly `schedule`. Images are built for
-`linux/amd64,linux/arm64` with buildx GHA cache and published to GHCR (and
-optionally Docker Hub when the `DOCKERHUB_USERNAME` / `DOCKERHUB_PASSWORD`
-secrets are set). A shared composite action (`.github/actions/smoke-test`)
-runs the end-to-end smoke test: HTTP 200 + noVNC, `/audio` WebSocket handshake
-(101), binary audio frames, supervisor programs RUNNING, no fatal errors.
+Each image has its own workflow (`.github/workflows/build-<os>-<de>.yml`).
+Workflows run on `workflow_dispatch` (manual) and on a scheduled monthly
+rebuild (1st of the month, 03:00 UTC) — build steps are deliberately
+restricted to those triggers to save CI minutes; push/PR/tag triggers are not
+enabled. Images are built for `linux/amd64,linux/arm64` with buildx GHA cache
+and published to GHCR (and optionally Docker Hub when the
+`DOCKERHUB_USERNAME` / `DOCKERHUB_PASSWORD` secrets are set). Each build tags
+`<git-sha>`, `latest`, and `<os>-latest`. A shared composite action
+(`.github/actions/smoke-test`) runs the end-to-end smoke test: HTTP 200 +
+noVNC, `/audio` WebSocket handshake (101), binary MPEG-TS frames, **real audio
+content** (an 880 Hz tone played inside the container must measure above
+-60 dB on the captured stream — silence fails the test), supervisor programs
+RUNNING, no fatal errors.
+
+## Audio notes
+
+- PulseAudio runs with a deterministic `/etc/pulse/default.pa` that loads a
+  fixed `audio_bridge` null sink at 44.1 kHz stereo on daemon start. Every
+  application plays to it and ffmpeg records its `audio_bridge.monitor`
+  source — the stream never depends on PulseAudio's lazy `auto_null` sink.
+- Browsers block WebAudio autoplay until a user gesture: the noVNC page shows
+  a **"Click to enable audio"** overlay when needed (Chrome/Edge/Firefox). The
+  audio WebSocket also upgrades to `wss://` automatically when the page is
+  served over HTTPS.
+- Sounds play inside the desktop (Firefox, system sounds, `paplay`) are
+  captured and streamed; with nothing playing the stream is digital silence.
 
 ## Quick facts
 

@@ -15,7 +15,7 @@ apt-get update -qq
 apt-get install -y -qq --no-install-recommends \
   sudo supervisor dbus-x11 dbus-system-bus-common xvfb x11-utils x11-xserver-utils xterm curl \
   tigervnc-standalone-server tigervnc-common novnc websockify \
-  pulseaudio ffmpeg nginx gettext-base \
+  pulseaudio pulseaudio-utils ffmpeg nginx gettext-base \
   fonts-dejavu-core fonts-dejavu-extra fonts-liberation \
   libasound2-plugins
 

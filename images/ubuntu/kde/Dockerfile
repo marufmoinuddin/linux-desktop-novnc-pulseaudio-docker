@@ -43,6 +43,9 @@ RUN mkdir -p /usr/share/novnc && \
 # Web assets (index.html with noVNC iframe + jsmpeg audio)
 COPY web/index.html /usr/share/novnc/index.html
 
+# Deterministic PulseAudio config: fixed audio_bridge null sink (capture source)
+COPY pulse/default.pa /etc/pulse/default.pa
+
 # nginx + supervisor configs
 COPY nginx.conf.template /etc/nginx/conf.d/nginx.conf.template
 COPY supervisord.conf /etc/supervisor/supervisord.conf
@@ -63,6 +66,7 @@ RUN if id ubuntu >/dev/null 2>&1; then \
     chmod 440 /etc/sudoers.d/ubuntu && \
     mkdir -p /home/ubuntu/.vnc /tmp/.X11-unix && \
     chmod 1777 /tmp/.X11-unix && \
+    mkdir -p /tmp/.ICE-unix && chmod 1777 /tmp/.ICE-unix && \
     chown -R ubuntu:ubuntu /home/ubuntu
 
 EXPOSE 8080

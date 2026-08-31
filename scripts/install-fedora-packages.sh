@@ -11,7 +11,7 @@ DE="${1:-xfce}"
 dnf --setopt=install_weak_deps=False --assumeyes install \
   sudo supervisor dbus-x11 xorg-x11-server-Xvfb xdpyinfo xrandr xset xterm curl openssl \
   tigervnc-server novnc python3-websockify \
-  pulseaudio ffmpeg-free nginx gettext \
+  pulseaudio pulseaudio-utils ffmpeg-free nginx gettext \
   dejavu-sans-fonts dejavu-serif-fonts liberation-fonts-all \
   alsa-plugins-pulseaudio
 
