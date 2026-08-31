@@ -53,10 +53,11 @@ envsubst '${PORT} ${WEBSOCKIFY_PORT} ${AUDIO_SERVER}' \
   > /etc/nginx/conf.d/default.conf
 
 # Create the VNC password file for Xvnc (VncAuth). The file is the password
-# (max 8 chars) DES-ECB encrypted with the fixed VNC key. Generated with
+# (max 8 chars) DES-ECB encrypted with the fixed VNC key, whose bytes are
+# BIT-REVERSED first (that is what tigervnc's vncpasswd does). Generated with
 # openssl because vncpasswd/tigervncpasswd are not packaged on every distro.
 mkdir -p /home/ubuntu/.vnc
-VNC_KEY="17526b06234e5807"
+VNC_KEY="e84ad660c4721ae0"
 VNC_TMP="$(mktemp)"
 printf '%s' "${VNC_PASSWD}" | head -c 8 > "${VNC_TMP}"
 VNC_LEN="$(wc -c < "${VNC_TMP}")"
