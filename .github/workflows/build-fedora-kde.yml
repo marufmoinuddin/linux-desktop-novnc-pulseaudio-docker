@@ -1,4 +1,4 @@
-name: build-fedora-kde
+name: Build & publish linux-desktop-novnc-pulseaudio-fedora-kde
 
 on:
   push:

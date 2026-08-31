@@ -1,4 +1,4 @@
-name: build-arch-gnome
+name: Build & publish linux-desktop-novnc-pulseaudio-arch-gnome
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: build-ubuntu-xfce
+name: Build & publish linux-desktop-novnc-pulseaudio-ubuntu-xfce
 
 on:
   push:
