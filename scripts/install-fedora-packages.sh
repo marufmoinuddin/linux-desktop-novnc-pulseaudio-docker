@@ -24,7 +24,7 @@ dnf --setopt=install_weak_deps=False --assumeyes install \
 case "${DE}" in
   kde)
     dnf --setopt=install_weak_deps=False --assumeyes install \
-      plasma-workspace plasma-desktop \
+      plasma-workspace plasma-desktop kwin-x11 \
       konsole dolphin gwenview okular ark kate spectacle \
       polkit-kde gvfs xdg-utils xdg-user-dirs shared-mime-info google-noto-sans-fonts
     ;;
@@ -74,7 +74,7 @@ write_manifest() {
 
 case "${DE}" in
   kde)
-    write_manifest konsole dolphin gwenview okular ark kate spectacle firefox
+    write_manifest konsole dolphin gwenview okular ark kate spectacle kwin_x11 firefox
     ;;
   gnome)
     write_manifest kgx nautilus loupe evince file-roller gnome-text-editor gnome-screenshot firefox

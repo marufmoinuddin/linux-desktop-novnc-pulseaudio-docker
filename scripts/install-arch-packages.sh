@@ -57,7 +57,7 @@ ln -sf /opt/websockify/bin/websockify /usr/local/bin/websockify
 case "${DE}" in
   kde)
     pacman -S --noconfirm --needed \
-      plasma-desktop plasma-workspace \
+      plasma-desktop plasma-workspace kwin-x11 \
       konsole dolphin gwenview okular ark kate spectacle \
       polkit-kde-agent gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
     ;;
@@ -105,7 +105,7 @@ write_manifest() {
 
 case "${DE}" in
   kde)
-    write_manifest konsole dolphin gwenview okular ark kate spectacle firefox
+    write_manifest konsole dolphin gwenview okular ark kate spectacle kwin_x11 firefox
     ;;
   gnome)
     write_manifest kgx nautilus loupe evince file-roller gnome-text-editor gnome-screenshot firefox

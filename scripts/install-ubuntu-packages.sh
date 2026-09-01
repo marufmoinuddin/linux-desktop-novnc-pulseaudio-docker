@@ -30,7 +30,7 @@ apt-get install -y -qq --no-install-recommends \
 case "${DE}" in
   kde)
     apt-get install -y -qq --no-install-recommends \
-      plasma-desktop \
+      plasma-desktop kwin-x11 \
       konsole dolphin gwenview okular ark kate kde-spectacle \
       polkit-kde-agent-1 gvfs xdg-utils xdg-user-dirs shared-mime-info fonts-noto-core
     ;;
@@ -114,7 +114,7 @@ write_manifest() {
 
 case "${DE}" in
   kde)
-    write_manifest konsole dolphin gwenview okular ark kate spectacle firefox
+    write_manifest konsole dolphin gwenview okular ark kate spectacle kwin_x11 firefox
     ;;
   gnome)
     write_manifest kgx nautilus loupe evince file-roller gnome-text-editor gnome-screenshot firefox
