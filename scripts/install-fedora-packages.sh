@@ -33,6 +33,12 @@ case "${DE}" in
       gnome-session gnome-shell \
       gnome-console nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
       gvfs xdg-utils xdg-user-dirs shared-mime-info google-noto-sans-fonts
+    # Headless hardening: disable gsd-usb-protection (segfaults without the
+    # org.gnome.ScreenSaver provider; as a required component its crash-loop
+    # fails the whole GNOME session with the "Oh no!" screen).
+    rm -f /etc/xdg/autostart/org.gnome.SettingsDaemon.UsbProtection.desktop
+    sed -i 's/org\.gnome\.SettingsDaemon\.UsbProtection;//' \
+      /usr/share/gnome-session/sessions/gnome.session
     ;;
   xfce)
     # Fedora has no `xfce4` meta-package; install the core Xfce session pieces

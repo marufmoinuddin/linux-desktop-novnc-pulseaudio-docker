@@ -125,6 +125,11 @@ Notes:
 - `/etc/flavor-essentials.txt` in each image lists the actual binaries; CI
   asserts every one exists and launches a representative GUI app on the
   display.
+- GNOME hardening: `gsd-usb-protection` segfaults headless without the
+  `org.gnome.ScreenSaver` D-Bus provider, and as a *required* component its
+  crash-loop trips the "Oh no!" failure screen. GNOME installs disable that
+  plugin (not required, not autostarted), and `start-gnome.sh` waits for the
+  accelerated-GL probe to pass so the session starts clean under tigervnc.
 
 ### CI
 

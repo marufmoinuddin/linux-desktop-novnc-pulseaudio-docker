@@ -66,6 +66,12 @@ case "${DE}" in
       gnome-shell gnome-session gnome-control-center gsettings-desktop-schemas \
       gnome-console nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
       gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
+    # Headless hardening: disable gsd-usb-protection (segfaults without the
+    # org.gnome.ScreenSaver provider; as a required component its crash-loop
+    # fails the whole GNOME session with the "Oh no!" screen).
+    rm -f /etc/xdg/autostart/org.gnome.SettingsDaemon.UsbProtection.desktop
+    sed -i 's/org\.gnome\.SettingsDaemon\.UsbProtection;//' \
+      /usr/share/gnome-session/sessions/gnome.session
     ;;
   xfce)
     pacman -S --noconfirm --needed \

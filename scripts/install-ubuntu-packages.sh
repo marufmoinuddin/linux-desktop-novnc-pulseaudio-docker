@@ -39,6 +39,13 @@ case "${DE}" in
       gnome-session gnome-shell \
       kgx nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
       gvfs xdg-utils xdg-user-dirs shared-mime-info fonts-noto-core
+    # Headless hardening: gsd-usb-protection segfaults when the
+    # org.gnome.ScreenSaver D-Bus provider is absent (headless X11), and
+    # being a REQUIRED component its crash/respawn-loop fails the whole
+    # session ("Oh no!" screen). Disable it: not required, not autostarted.
+    rm -f /etc/xdg/autostart/org.gnome.SettingsDaemon.UsbProtection.desktop
+    sed -i 's/org\.gnome\.SettingsDaemon\.UsbProtection;//' \
+      /usr/share/gnome-session/sessions/gnome.session
     ;;
   xfce)
     apt-get install -y -qq --no-install-recommends \
