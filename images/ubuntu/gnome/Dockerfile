@@ -19,6 +19,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /audiobridge
 FROM ${BASE_IMAGE}
 
 ARG IMAGE_FLAVOR=ubuntu-gnome
+ARG USER_NAME=ubuntu
+ARG USER_UID=1000
+ARG USER_GID=1000
 ENV DE=gnome \
     LANG=C.UTF-8 \
     TZ=UTC \
@@ -50,23 +53,22 @@ COPY pulse/default.pa /etc/pulse/default.pa
 COPY nginx.conf.template /etc/nginx/conf.d/nginx.conf.template
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 
+# Render the configured user identity into the runtime configs/scripts
+# (the repo keeps the original 'ubuntu' names as the template).
+RUN sed -i "s/ubuntu/${USER_NAME}/g" \
+      /etc/supervisor/supervisord.conf /opt/scripts/*.sh
+
 # Go relay binary
 COPY --from=builder /audiobridge /usr/local/bin/audiobridge
 
-# Dedicated unprivileged user (uid/gid 1001) with passwordless sudo.
-# ubuntu:24.04 already ships an 'ubuntu' user (uid 1000); remap it to 1001.
+# Dedicated unprivileged user: reuse the base image's 'ubuntu' user
+# (uid/gid 1000) as-is; add passwordless sudo + runtime dirs.
 # No world-writable /etc/passwd (unlike the original).
-RUN if id ubuntu >/dev/null 2>&1; then \
-      groupmod -g 1001 ubuntu && usermod -u 1001 -g 1001 ubuntu; \
-    else \
-      groupadd -g 1001 ubuntu && useradd -m -u 1001 -g 1001 -s /bin/bash ubuntu; \
-    fi && \
-    usermod -aG sudo ubuntu && \
+RUN usermod -aG sudo ubuntu && \
     echo 'ubuntu ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/ubuntu && \
     chmod 440 /etc/sudoers.d/ubuntu && \
-    mkdir -p /home/ubuntu/.vnc /tmp/.X11-unix && \
-    chmod 1777 /tmp/.X11-unix && \
-    mkdir -p /tmp/.ICE-unix && chmod 1777 /tmp/.ICE-unix && \
+    mkdir -p /home/ubuntu/.vnc /tmp/.X11-unix /tmp/.ICE-unix && \
+    chmod 1777 /tmp/.X11-unix /tmp/.ICE-unix && \
     chown -R ubuntu:ubuntu /home/ubuntu
 
 EXPOSE 8080

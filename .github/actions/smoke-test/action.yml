@@ -57,6 +57,16 @@ runs:
         HOST_PORT="$(docker port "$CID" 10000/tcp | sed 's/.*://')"
         echo "==> Container listening on 127.0.0.1:${HOST_PORT}"
 
+        # Resolve the container user + runtime dir dynamically (images use a
+        # <distro> user @ uid/gid 1000: ubuntu, fedora, or arch).
+        RUN_USER="$(docker exec "$CID" getent passwd 1000 | cut -d: -f1)"
+        if [ -z "$RUN_USER" ]; then
+          echo "FAIL: could not resolve uid 1000 inside the container"
+          exit 1
+        fi
+        RUNTIME_DIR="/tmp/runtime-${RUN_USER}"
+        echo "==> container user: ${RUN_USER} (runtime dir ${RUNTIME_DIR})"
+
         # (a) GET / -> HTTP 200 and page contains "noVNC"
         HTTP_OK=""
         for _ in $(seq 1 90); do
@@ -101,7 +111,7 @@ runs:
         #     accept any *.monitor source for resilience.
         SOURCE_OK=""
         for _ in $(seq 1 45); do
-          SOURCES="$(docker exec -u ubuntu -e XDG_RUNTIME_DIR=/tmp/runtime-ubuntu \
+          SOURCES="$(docker exec -u "$RUN_USER" -e XDG_RUNTIME_DIR="$RUNTIME_DIR" \
             "$CID" pactl list sources short 2>/dev/null || true)"
           if echo "$SOURCES" | grep -qE '\.monitor'; then
             SOURCE_OK=1
@@ -190,14 +200,14 @@ runs:
         #     stream, and measure the decoded volume. Digital silence reports
         #     ~ -91 dB; a real tone must exceed -60 dB. This is the check that
         #     proves the browser would actually hear something.
-        SINK="$(docker exec -u ubuntu -e XDG_RUNTIME_DIR=/tmp/runtime-ubuntu \
+        SINK="$(docker exec -u "$RUN_USER" -e XDG_RUNTIME_DIR="$RUNTIME_DIR" \
           "$CID" pactl list sinks short 2>/dev/null | awk 'NR==1{print $2}')"
         if [ -z "$SINK" ]; then
           echo "FAIL: no PulseAudio sink found for the tone test"
           exit 1
         fi
         echo "==> Playing 880 Hz tone to sink ${SINK} inside the container"
-        docker exec -u ubuntu -e XDG_RUNTIME_DIR=/tmp/runtime-ubuntu \
+        docker exec -u "$RUN_USER" -e XDG_RUNTIME_DIR="$RUNTIME_DIR" \
           "$CID" ffmpeg -hide_banner -loglevel error \
           -f lavfi -i "sine=frequency=880:duration=4" -f pulse "$SINK" >/dev/null 2>&1 &
         TONE_PID=$!

@@ -19,6 +19,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /audiobridge
 FROM ${BASE_IMAGE}
 
 ARG IMAGE_FLAVOR=arch-xfce
+ARG USER_NAME=arch
+ARG USER_UID=1000
+ARG USER_GID=1000
 ENV DE=xfce \
     LANG=C.UTF-8 \
     TZ=UTC
@@ -48,23 +51,27 @@ COPY pulse/default.pa /etc/pulse/default.pa
 COPY nginx.conf.template /etc/nginx/conf.d/nginx.conf.template
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 
+# Render the configured user identity into the runtime configs/scripts
+# (the repo keeps the original 'ubuntu' names as the template).
+RUN sed -i "s/ubuntu/${USER_NAME}/g" \
+      /etc/supervisor/supervisord.conf /opt/scripts/*.sh
+
 # Go relay binary
 COPY --from=builder /audiobridge /usr/local/bin/audiobridge
 
-# Dedicated unprivileged user (uid/gid 1001) with passwordless sudo.
+# Dedicated unprivileged user ${USER_NAME} (uid/gid 1000) with passwordless sudo.
 # No world-writable /etc/passwd (unlike the original).
-RUN groupadd -g 1001 ubuntu && \
-    useradd -m -u 1001 -g 1001 -s /bin/bash ubuntu && \
-    usermod -aG wheel ubuntu && \
-    echo 'ubuntu ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/ubuntu && \
-    chmod 440 /etc/sudoers.d/ubuntu && \
-    mkdir -p /home/ubuntu/.vnc /tmp/.X11-unix && \
-    chmod 1777 /tmp/.X11-unix && \
-    mkdir -p /tmp/.ICE-unix && chmod 1777 /tmp/.ICE-unix && \
-    chown -R ubuntu:ubuntu /home/ubuntu
+RUN groupadd -g ${USER_GID} ${USER_NAME} && \
+    useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USER_NAME} && \
+    usermod -aG wheel ${USER_NAME} && \
+    echo '${USER_NAME} ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/${USER_NAME} && \
+    chmod 440 /etc/sudoers.d/${USER_NAME} && \
+    mkdir -p /home/${USER_NAME}/.vnc /tmp/.X11-unix /tmp/.ICE-unix && \
+    chmod 1777 /tmp/.X11-unix /tmp/.ICE-unix && \
+    chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}
 
 EXPOSE 8080
-VOLUME ["/home/ubuntu"]
+VOLUME ["/home/arch"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD /bin/sh -c 'curl -fsS "http://localhost:${PORT:-8080}/" >/dev/null || exit 1' 

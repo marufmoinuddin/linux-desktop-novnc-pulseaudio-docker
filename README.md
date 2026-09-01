@@ -88,8 +88,11 @@ Then open <http://localhost:8080> — noVNC loads and audio streams automaticall
 - `Xvfb` uses `-nolisten tcp` (unix socket only); tigervnc (`x0vncserver`)
   binds `127.0.0.1`.
 - nginx `:80` default site removed; only `$PORT` is exposed.
-- Dedicated `ubuntu` user (uid/gid 1001) with passwordless sudo; no
-  world-writable `/etc/passwd`.
+- Dedicated `<distro>` user (uid/gid **1000** — `ubuntu`, `fedora`, or `arch`
+  matching the base OS) with passwordless sudo; no world-writable
+  `/etc/passwd`. Ubuntu reuses the base image's built-in `ubuntu` account;
+  Fedora/Arch create `fedora`/`arch`. Overridable at build time via
+  `--build-arg USER_NAME=... --build-arg USER_UID=... --build-arg USER_GID=...`.
 - `HEALTHCHECK` curls `http://localhost:${PORT:-8080}/`.
 - `LANG=C.UTF-8` and `TZ` are set.
 
