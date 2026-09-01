@@ -14,7 +14,7 @@ dnf --setopt=install_weak_deps=False --assumeyes install \
   tigervnc-server novnc python3-websockify \
   pulseaudio pulseaudio-utils ffmpeg-free nginx gettext \
   dejavu-sans-fonts dejavu-serif-fonts liberation-fonts-all \
-  alsa-plugins-pulseaudio
+  alsa-plugins-pulseaudio procps-ng
 
 # ---------------------------------------------------------------------------
 # Desktop environment + essential applications (native to the DE).
