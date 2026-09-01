@@ -37,7 +37,7 @@ fi
 # the official Arch repos (AUR-only); noVNC is fetched from GitHub in the
 # Dockerfile and websockify is installed via pip below.
 pacman -S --noconfirm --needed \
-  sudo supervisor dbus xorg-server-xvfb xorg-xrandr xterm curl python-pip \
+  sudo supervisor dbus xorg-server-xvfb xorg-xrandr xorg-xdpyinfo xterm curl python-pip \
   tigervnc \
   pulseaudio ffmpeg nginx gettext \
   ttf-dejavu \
@@ -62,16 +62,26 @@ case "${DE}" in
       polkit-kde-agent gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
     ;;
   gnome)
+    # GNOME 50 (Arch) is Wayland-only and gnome-session requires a systemd
+    # user session — neither works in an unprivileged X11 container. Use
+    # Cinnamon (GNOME-3-derived, X11-native, no systemd requirement) as the
+    # session while keeping the full GNOME essential application set.
     pacman -S --noconfirm --needed \
-      gnome-shell gnome-session gnome-control-center gsettings-desktop-schemas \
+      cinnamon gsettings-desktop-schemas \
       gnome-console nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
       gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
-    # Headless hardening: disable gsd-usb-protection (segfaults without the
-    # org.gnome.ScreenSaver provider; as a required component its crash-loop
-    # fails the whole GNOME session with the "Oh no!" screen).
+    # Headless hardening (inert for Cinnamon but harmless): disable
+    # gsd-usb-protection where GSD exists (segfaults without the
+    # org.gnome.ScreenSaver provider; required-component crash-loop fails the
+    # session). The session file edit is guarded because Cinnamon may not
+    # ship gnome-session's session file.
     rm -f /etc/xdg/autostart/org.gnome.SettingsDaemon.UsbProtection.desktop
-    sed -i 's/org\.gnome\.SettingsDaemon\.UsbProtection;//' \
-      /usr/share/gnome-session/sessions/gnome.session
+    rm -f /usr/lib/systemd/user/org.gnome.SettingsDaemon.UsbProtection.service \
+          /usr/lib/systemd/user/org.gnome.SettingsDaemon.UsbProtection.target
+    if [ -f /usr/share/gnome-session/sessions/gnome.session ]; then
+      sed -i 's/org\.gnome\.SettingsDaemon\.UsbProtection;//' \
+        /usr/share/gnome-session/sessions/gnome.session
+    fi
     ;;
   xfce)
     pacman -S --noconfirm --needed \

@@ -382,13 +382,15 @@ runs:
         DE_DESKTOP="$(docker exec "$CID" cat /etc/flavor-desktop.txt 2>/dev/null || echo unknown)"
         case "${DE_DESKTOP}" in
           gnome)
-            docker exec "$CID" bash -c 'pgrep -f "gnome-shel[l]$" >/dev/null' \
-              || { echo "FAIL: gnome-shell not running"; exit 1; }
+            # Real GNOME Shell on Ubuntu/Fedora; Cinnamon fallback on Arch
+            # (GNOME 50 is Wayland-only + systemd-required there).
+            docker exec "$CID" bash -c 'pgrep -f "gnome-shel[l]$" >/dev/null || pgrep -f "cinnamon-sessio[n]" >/dev/null' \
+              || { echo "FAIL: no GNOME/Cinnamon session running"; exit 1; }
             if docker exec "$CID" bash -c 'pgrep -f "gnome-session-fail[e]d" >/dev/null'; then
               echo "FAIL: GNOME session in failed state (gnome-session-failed running)"
               exit 1
             fi
-            echo "PASS: GNOME session healthy (shell up, no failure dialog)"
+            echo "PASS: GNOME session healthy (shell/cinnamon up, no failure dialog)"
             ;;
           kde)
             docker exec "$CID" bash -c 'pgrep -f "kwin_x1[1]" >/dev/null' \
