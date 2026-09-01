@@ -61,8 +61,16 @@ COPY --from=builder /audiobridge /usr/local/bin/audiobridge
 
 # Dedicated unprivileged user ${USER_NAME} (uid/gid 1000) with passwordless sudo.
 # No world-writable /etc/passwd (unlike the original).
-RUN groupadd -g ${USER_GID} ${USER_NAME} && \
-    useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USER_NAME} && \
+# Handle case where base image already has a user at uid 1000 (remap to 1001).
+RUN if id ${USER_NAME} >/dev/null 2>&1; then \
+      groupmod -g 1001 ${USER_NAME} && usermod -u 1001 -g 1001 ${USER_NAME}; \
+    elif getent passwd 1000 >/dev/null 2>&1; then \
+      EXISTING_USER=$(getent passwd 1000 | cut -d: -f1); \
+      groupmod -g 1001 ${EXISTING_USER} && usermod -u 1001 -g 1001 ${EXISTING_USER}; \
+      groupadd -g ${USER_GID} ${USER_NAME} && useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USER_NAME}; \
+    else \
+      groupadd -g ${USER_GID} ${USER_NAME} && useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash ${USER_NAME}; \
+    fi && \
     usermod -aG wheel ${USER_NAME} && \
     echo '${USER_NAME} ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/${USER_NAME} && \
     chmod 440 /etc/sudoers.d/${USER_NAME} && \
