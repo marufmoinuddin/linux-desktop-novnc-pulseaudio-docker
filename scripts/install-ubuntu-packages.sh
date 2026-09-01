@@ -92,8 +92,10 @@ install_firefox
 # ---------------------------------------------------------------------------
 # Essentials manifest — /etc/flavor-essentials.txt records the actual binary
 # names (kgx vs gnome-console drift resolved). The CI smoke test asserts every
-# line exists. /etc/flavor-screenshot.txt records the screenshot utility, or
-# "fireshot" when the distro lacks one (see scripts/setup-fireshot.sh).
+# line exists — every requested binary is recorded even if missing so an
+# incomplete image fails loudly. /etc/flavor-screenshot.txt records the
+# screenshot utility, or "fireshot" when the distro lacks one (see
+# scripts/setup-fireshot.sh).
 # ---------------------------------------------------------------------------
 write_manifest() {
   : > /etc/flavor-essentials.txt
@@ -103,7 +105,8 @@ write_manifest() {
     elif [ "${bin}" = "kgx" ] && command -v gnome-console >/dev/null 2>&1; then
       echo "gnome-console" >> /etc/flavor-essentials.txt
     else
-      echo "WARN: essential app binary missing: ${bin}" >&2
+      echo "WARN: essential app binary MISSING: ${bin} (recorded anyway so CI fails)" >&2
+      echo "${bin}" >> /etc/flavor-essentials.txt
     fi
   done
   cat /etc/flavor-essentials.txt

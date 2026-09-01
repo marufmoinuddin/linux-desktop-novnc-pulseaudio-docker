@@ -48,9 +48,14 @@ case "${DE}" in
     ;;
 esac
 
+# Firefox (distro package — required in every flavor).
+dnf --setopt=install_weak_deps=False --assumeyes install firefox
+
 # ---------------------------------------------------------------------------
 # Essentials manifest + screenshot marker (see install-ubuntu-packages.sh for
 # the contract; scripts/setup-fireshot.sh handles the "fireshot" fallback).
+# Every requested binary is recorded — even if missing — so the CI smoke test
+# fails loudly instead of silently passing with an incomplete image.
 # ---------------------------------------------------------------------------
 write_manifest() {
   : > /etc/flavor-essentials.txt
@@ -60,7 +65,8 @@ write_manifest() {
     elif [ "${bin}" = "kgx" ] && command -v gnome-console >/dev/null 2>&1; then
       echo "gnome-console" >> /etc/flavor-essentials.txt
     else
-      echo "WARN: essential app binary missing: ${bin}" >&2
+      echo "WARN: essential app binary MISSING: ${bin} (recorded anyway so CI fails)" >&2
+      echo "${bin}" >> /etc/flavor-essentials.txt
     fi
   done
   cat /etc/flavor-essentials.txt
