@@ -127,6 +127,8 @@ case "${DE}" in
   gnome) SCREENSHOT_BIN="gnome-screenshot" ;;
   xfce) SCREENSHOT_BIN="xfce4-screenshooter" ;;
 esac
+echo "${DE}" > /etc/flavor-desktop.txt
+
 if [ -n "${SCREENSHOT_BIN}" ] && command -v "${SCREENSHOT_BIN}" >/dev/null 2>&1; then
   echo "${SCREENSHOT_BIN}" > /etc/flavor-screenshot.txt
 else

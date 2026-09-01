@@ -377,4 +377,32 @@ runs:
         fi
         APPEOF
 
+        # (i) DE session sanity: the DE's session processes must be alive and the
+        #     GNOME failure path must not be running. Self-match-proof pgrep.
+        DE_DESKTOP="$(docker exec "$CID" cat /etc/flavor-desktop.txt 2>/dev/null || echo unknown)"
+        case "${DE_DESKTOP}" in
+          gnome)
+            docker exec "$CID" bash -c 'pgrep -f "gnome-shel[l]$" >/dev/null' \
+              || { echo "FAIL: gnome-shell not running"; exit 1; }
+            if docker exec "$CID" bash -c 'pgrep -f "gnome-session-fail[e]d" >/dev/null'; then
+              echo "FAIL: GNOME session in failed state (gnome-session-failed running)"
+              exit 1
+            fi
+            echo "PASS: GNOME session healthy (shell up, no failure dialog)"
+            ;;
+          kde)
+            docker exec "$CID" bash -c 'pgrep -f "kwin_x1[1]" >/dev/null' \
+              || { echo "FAIL: kwin_x11 (window manager) not running"; exit 1; }
+            echo "PASS: KDE session healthy (kwin_x11 running)"
+            ;;
+          xfce)
+            docker exec "$CID" bash -c 'pgrep -f "xfwm[4]" >/dev/null' \
+              || { echo "FAIL: xfwm4 (window manager) not running"; exit 1; }
+            echo "PASS: Xfce session healthy (xfwm4 running)"
+            ;;
+          *)
+            echo "WARN: unknown DE marker '${DE_DESKTOP}'; skipping session sanity"
+            ;;
+        esac
+
         echo "==> Smoke test passed; removing container ${CID}"
