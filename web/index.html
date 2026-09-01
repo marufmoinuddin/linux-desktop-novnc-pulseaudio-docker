@@ -8,17 +8,6 @@
   html, body { margin: 0; height: 100%; background: #1b1b1b; color: #eee;
     font-family: system-ui, sans-serif; }
   #vnc-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
-  #audio-status { position: fixed; right: 8px; bottom: 8px; z-index: 10;
-    font-size: 12px; color: #8f8; background: rgba(0,0,0,.6);
-    padding: 2px 8px; border-radius: 4px; }
-  /* Click-to-enable-audio overlay. Browsers block WebAudio autoplay until a
-     user gesture; without this overlay the noVNC audio stream is silent. */
-  #audio-unlock { display: none; position: fixed; inset: 0; z-index: 20;
-    align-items: center; justify-content: center; background: rgba(0,0,0,.55); }
-  #audio-unlock button { font-size: 18px; padding: 14px 28px; border: 0;
-    border-radius: 8px; background: #2a9d8f; color: #fff; cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0,0,0,.4); }
-  #audio-unlock button:hover { background: #24917f; }
 </style>
 <script src="jsmpeg.min.js"></script>
 </head>
@@ -26,17 +15,10 @@
 <iframe id="vnc-frame"
   src="vnc.html?autoconnect=true&path=websockify&resize=remote&reconnect=true"
   allow="clipboard-read; clipboard-write"></iframe>
-<div id="audio-status">audio: connecting…</div>
-<div id="audio-unlock"><button id="audio-unlock-btn" type="button">
-  &#128266; Click to enable audio</button></div>
 <script>
   (function () {
-    var statusEl = document.getElementById('audio-status');
-    var unlockEl = document.getElementById('audio-unlock');
-    var unlockBtn = document.getElementById('audio-unlock-btn');
-
     if (!window.JSMpeg) {
-      statusEl.textContent = 'audio: jsmpeg failed to load';
+      // jsmpeg failed to load; the desktop still works, only audio is off.
       return;
     }
 
@@ -47,45 +29,26 @@
       audio: true,
       audioBufferSize: 128 * 1024,
       maxAudioLag: 0.25,
-      autoplay: true,
-      onPlay: function () { statusEl.textContent = 'audio: playing'; },
-      onStalled: function () { statusEl.textContent = 'audio: stalled'; },
-      onClose: function () { statusEl.textContent = 'audio: disconnected'; },
-      onError: function () { statusEl.textContent = 'audio: error'; }
+      autoplay: true
     });
 
-    // Browsers (Chrome/Edge/Firefox) suspend the WebAudio context until a
-    // user gesture. Show the unlock overlay when that happens, and resume
-    // the context + jsmpeg's buffer on click. jsmpeg only adds this overlay
-    // itself for video players; the noVNC page is audio-only, so we provide
-    // the affordance here.
-    var pollCount = 0;
-    var pollTimer = setInterval(function () {
-      var ctx = audio.audioOut && audio.audioOut.context;
-      if (ctx && ctx.state === 'suspended') {
-        clearInterval(pollTimer);
-        unlockEl.style.display = 'flex';
-        statusEl.textContent = 'audio: click to enable sound';
-      } else if (++pollCount > 40) {
-        // ~12s: context is running; nothing to unlock.
-        clearInterval(pollTimer);
-      }
-    }, 300);
-
-    unlockBtn.addEventListener('click', function () {
-      unlockEl.style.display = 'none';
+    // Audio is enabled by default: the player starts immediately, and if the
+    // browser suspended the WebAudio context (autoplay policy: Chrome/Edge/
+    // Firefox allow sound only after a user gesture), we unlock it silently
+    // on the first interaction with the page — no button, no overlay. The
+    // user's first click/keypress on the desktop counts as that gesture.
+    function unlockAudio() {
       var ctx = audio.audioOut && audio.audioOut.context;
       if (ctx && ctx.resume) {
         ctx.resume().catch(function () {});
       }
       if (audio.audioOut && audio.audioOut.unlock) {
-        audio.audioOut.unlock(function () {
-          statusEl.textContent = 'audio: playing';
-        });
+        audio.audioOut.unlock(function () {});
       }
-      // Ensure playback is actually running after the gesture.
       try { audio.play(); } catch (e) {}
-      statusEl.textContent = 'audio: enabling…';
+    }
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (evt) {
+      document.addEventListener(evt, unlockAudio, { once: true, passive: true });
     });
   })();
 </script>

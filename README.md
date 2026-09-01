@@ -115,8 +115,9 @@ RUNNING, no fatal errors.
   fixed `audio_bridge` null sink at 44.1 kHz stereo on daemon start. Every
   application plays to it and ffmpeg records its `audio_bridge.monitor`
   source — the stream never depends on PulseAudio's lazy `auto_null` sink.
-- Browsers block WebAudio autoplay until a user gesture: the noVNC page shows
-  a **"Click to enable audio"** overlay when needed (Chrome/Edge/Firefox). The
+- Browsers block WebAudio autoplay until a user gesture, so the player
+  starts with `autoplay: true` immediately and is unlocked silently on the
+  first click/keypress/touch anywhere on the page (no button or overlay). The
   audio WebSocket also upgrades to `wss://` automatically when the page is
   served over HTTPS.
 - Sounds play inside the desktop (Firefox, system sounds, `paplay`) are
