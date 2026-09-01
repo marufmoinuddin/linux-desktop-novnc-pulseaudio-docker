@@ -71,6 +71,8 @@ RUN usermod -aG sudo ubuntu && \
     chmod 1777 /tmp/.X11-unix /tmp/.ICE-unix && \
     chown -R ubuntu:ubuntu /home/ubuntu
 
+RUN USER_NAME=${USER_NAME} /opt/scripts/setup-fireshot.sh
+
 EXPOSE 8080
 VOLUME ["/home/ubuntu"]
 

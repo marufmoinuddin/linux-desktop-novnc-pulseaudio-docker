@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # install-fedora-packages.sh — installs the common runtime stack plus one
-# desktop environment on Fedora. Usage: install-fedora-packages.sh <kde|gnome|xfce>
+# desktop environment with its essential applications on Fedora.
+# Usage: install-fedora-packages.sh <kde|gnome|xfce>
 set -euo pipefail
 
 DE="${1:-xfce}"
@@ -15,24 +16,84 @@ dnf --setopt=install_weak_deps=False --assumeyes install \
   dejavu-sans-fonts dejavu-serif-fonts liberation-fonts-all \
   alsa-plugins-pulseaudio
 
-# Desktop environment.
+# ---------------------------------------------------------------------------
+# Desktop environment + essential applications (native to the DE).
+# Only the dependencies required for these applications and a functional
+# graphical session (MIME/XDG/fonts/notifications/authentication).
+# ---------------------------------------------------------------------------
 case "${DE}" in
   kde)
-    dnf --setopt=install_weak_deps=False --assumeyes install plasma-workspace plasma-desktop
+    dnf --setopt=install_weak_deps=False --assumeyes install \
+      plasma-workspace plasma-desktop \
+      konsole dolphin gwenview okular ark kate spectacle \
+      polkit-kde gvfs xdg-utils xdg-user-dirs shared-mime-info google-noto-sans-fonts
     ;;
   gnome)
-    dnf --setopt=install_weak_deps=False --assumeyes install gnome-session gnome-shell
+    dnf --setopt=install_weak_deps=False --assumeyes install \
+      gnome-session gnome-shell \
+      gnome-console nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
+      gvfs xdg-utils xdg-user-dirs shared-mime-info google-noto-sans-fonts
     ;;
   xfce)
-    # Fedora has no `xfce4` meta-package; install the core Xfce session pieces.
+    # Fedora has no `xfce4` meta-package; install the core Xfce session pieces
+    # plus the essential applications.
     dnf --setopt=install_weak_deps=False --assumeyes install \
-      xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-settings xfconf xfce4-terminal thunar
+      xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-settings xfconf xfce4-terminal thunar \
+      ristretto atril xarchiver mousepad xfce4-screenshooter \
+      xfce4-notifyd mate-polkit gvfs xdg-utils xdg-user-dirs shared-mime-info google-noto-sans-fonts
     ;;
   *)
     echo "Unknown desktop environment: ${DE}" >&2
     exit 1
     ;;
 esac
+
+# ---------------------------------------------------------------------------
+# Essentials manifest + screenshot marker (see install-ubuntu-packages.sh for
+# the contract; scripts/setup-fireshot.sh handles the "fireshot" fallback).
+# ---------------------------------------------------------------------------
+write_manifest() {
+  : > /etc/flavor-essentials.txt
+  for bin in "$@"; do
+    if command -v "${bin}" >/dev/null 2>&1; then
+      echo "${bin}" >> /etc/flavor-essentials.txt
+    elif [ "${bin}" = "kgx" ] && command -v gnome-console >/dev/null 2>&1; then
+      echo "gnome-console" >> /etc/flavor-essentials.txt
+    else
+      echo "WARN: essential app binary missing: ${bin}" >&2
+    fi
+  done
+  cat /etc/flavor-essentials.txt
+}
+
+case "${DE}" in
+  kde)
+    write_manifest konsole dolphin gwenview okular ark kate spectacle firefox
+    ;;
+  gnome)
+    write_manifest kgx nautilus loupe evince file-roller gnome-text-editor gnome-screenshot firefox
+    ;;
+  xfce)
+    write_manifest xfce4-terminal thunar ristretto atril xarchiver mousepad xfce4-screenshooter firefox
+    ;;
+esac
+
+SCREENSHOT_BIN=""
+case "${DE}" in
+  kde) SCREENSHOT_BIN="spectacle" ;;
+  gnome) SCREENSHOT_BIN="gnome-screenshot" ;;
+  xfce) SCREENSHOT_BIN="xfce4-screenshooter" ;;
+esac
+if [ -n "${SCREENSHOT_BIN}" ] && command -v "${SCREENSHOT_BIN}" >/dev/null 2>&1; then
+  echo "${SCREENSHOT_BIN}" > /etc/flavor-screenshot.txt
+else
+  echo "WARN: ${SCREENSHOT_BIN} unavailable; enabling FireShot fallback" >&2
+  echo "fireshot" > /etc/flavor-screenshot.txt
+  mkdir -p /opt/fireshot
+  curl -fL --retry 3 -o /opt/fireshot/fireshot.xpi \
+    "https://addons.mozilla.org/firefox/downloads/file/4120150/fireshot-1.12.18.xpi" \
+    || echo "WARN: FireShot download failed" >&2
+fi
 
 # Remove the stock nginx :80 default site (security baseline).
 rm -f /etc/nginx/conf.d/default.conf

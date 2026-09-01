@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
 # install-arch-packages.sh — installs the common runtime stack plus one
-# desktop environment on Arch Linux. Usage: install-arch-packages.sh <kde|gnome|xfce>
+# desktop environment with its essential applications on Arch Linux.
+# Usage: install-arch-packages.sh <kde|gnome|xfce>
+#
+# Unlike the original recipe (which pulled the huge `plasma` / `gnome`
+# groups), we install curated core sets + the essential applications only.
 set -euo pipefail
 
 DE="${1:-xfce}"
@@ -46,22 +50,81 @@ python -m venv /opt/websockify
 /opt/websockify/bin/pip install websockify
 ln -sf /opt/websockify/bin/websockify /usr/local/bin/websockify
 
-# Desktop environment (groups).
+# ---------------------------------------------------------------------------
+# Desktop environment (curated core sets) + essential applications + the
+# integration pieces (MIME/XDG/fonts/notifications/authentication).
+# ---------------------------------------------------------------------------
 case "${DE}" in
   kde)
-    pacman -S --noconfirm --needed plasma
+    pacman -S --noconfirm --needed \
+      plasma-desktop plasma-workspace \
+      konsole dolphin gwenview okular ark kate spectacle \
+      polkit-kde-agent gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
     ;;
   gnome)
-    pacman -S --noconfirm --needed gnome
+    pacman -S --noconfirm --needed \
+      gnome-shell gnome-session gnome-control-center gsettings-desktop-schemas \
+      gnome-console nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
+      gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
     ;;
   xfce)
-    pacman -S --noconfirm --needed xfce4
+    pacman -S --noconfirm --needed \
+      xfce4 \
+      xfce4-terminal thunar ristretto atril xarchiver mousepad xfce4-screenshooter \
+      xfce4-notifyd polkit-gnome gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
     ;;
   *)
     echo "Unknown desktop environment: ${DE}" >&2
     exit 1
     ;;
 esac
+
+# ---------------------------------------------------------------------------
+# Essentials manifest + screenshot marker (see install-ubuntu-packages.sh for
+# the contract; scripts/setup-fireshot.sh handles the "fireshot" fallback).
+# ---------------------------------------------------------------------------
+write_manifest() {
+  : > /etc/flavor-essentials.txt
+  for bin in "$@"; do
+    if command -v "${bin}" >/dev/null 2>&1; then
+      echo "${bin}" >> /etc/flavor-essentials.txt
+    elif [ "${bin}" = "kgx" ] && command -v gnome-console >/dev/null 2>&1; then
+      echo "gnome-console" >> /etc/flavor-essentials.txt
+    else
+      echo "WARN: essential app binary missing: ${bin}" >&2
+    fi
+  done
+  cat /etc/flavor-essentials.txt
+}
+
+case "${DE}" in
+  kde)
+    write_manifest konsole dolphin gwenview okular ark kate spectacle firefox
+    ;;
+  gnome)
+    write_manifest kgx nautilus loupe evince file-roller gnome-text-editor gnome-screenshot firefox
+    ;;
+  xfce)
+    write_manifest xfce4-terminal thunar ristretto atril xarchiver mousepad xfce4-screenshooter firefox
+    ;;
+esac
+
+SCREENSHOT_BIN=""
+case "${DE}" in
+  kde) SCREENSHOT_BIN="spectacle" ;;
+  gnome) SCREENSHOT_BIN="gnome-screenshot" ;;
+  xfce) SCREENSHOT_BIN="xfce4-screenshooter" ;;
+esac
+if [ -n "${SCREENSHOT_BIN}" ] && command -v "${SCREENSHOT_BIN}" >/dev/null 2>&1; then
+  echo "${SCREENSHOT_BIN}" > /etc/flavor-screenshot.txt
+else
+  echo "WARN: ${SCREENSHOT_BIN} unavailable; enabling FireShot fallback" >&2
+  echo "fireshot" > /etc/flavor-screenshot.txt
+  mkdir -p /opt/fireshot
+  curl -fL --retry 3 -o /opt/fireshot/fireshot.xpi \
+    "https://addons.mozilla.org/firefox/downloads/file/4120150/fireshot-1.12.18.xpi" \
+    || echo "WARN: FireShot download failed" >&2
+fi
 
 # Replace Arch's stock nginx.conf (which ships a :80 default server) with a
 # minimal config that only includes our conf.d server block (security baseline).

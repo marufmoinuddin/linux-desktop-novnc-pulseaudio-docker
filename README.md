@@ -96,6 +96,36 @@ Then open <http://localhost:8080> — noVNC loads and audio streams automaticall
 - `HEALTHCHECK` curls `http://localhost:${PORT:-8080}/`.
 - `LANG=C.UTF-8` and `TZ` are set.
 
+### Essential applications
+
+Each flavor ships a native toolset (verified against the distro repos at build
+time): terminal, file manager, image viewer, PDF viewer, archive manager, text
+editor, screenshot utility, and Firefox.
+
+| DE | Apps |
+|---|---|
+| **GNOME** | GNOME Console, Nautilus, Loupe, Evince, File Roller, GNOME Text Editor, GNOME Screenshot, Firefox |
+| **KDE** | Konsole, Dolphin, Gwenview, Okular, Ark, Kate, Spectacle, Firefox |
+| **Xfce** | Xfce Terminal, Thunar, Ristretto, Atril, Xarchiver, Mousepad, Xfce Screenshooter, Firefox |
+
+Notes:
+
+- Ubuntu's apt `firefox` is a snap transitional package (cannot run in this
+  container), so Ubuntu images install Firefox from the **mozillateam PPA**
+  with a pin override; the Mozilla tarball is the automatic fallback if the
+  PPA is unreachable. Fedora/Arch use their distro packages.
+- Where a distro/DE lacks the screenshot utility (e.g. `spectacle` in KDE
+  23.08-era apt repos), the build automatically installs the **FireShot**
+  Firefox add-on (signed AMO XPI pre-seeded into the user's profile). Today
+  every variant has a native utility; the fallback is wired in for safety.
+- Install scope is "applications + what they need": MIME handling
+  (`shared-mime-info`, `gvfs`, `xdg-utils`, `xdg-user-dirs`), notifications,
+  fonts, icons/themes (from the DE), and polkit authentication daemon + DE
+  agent. No whole-DE meta groups or extras beyond that.
+- `/etc/flavor-essentials.txt` in each image lists the actual binaries; CI
+  asserts every one exists and launches a representative GUI app on the
+  display.
+
 ### CI
 
 Each image has its own workflow (`.github/workflows/build-<os>-<de>.yml`).

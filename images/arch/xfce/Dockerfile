@@ -70,6 +70,8 @@ RUN groupadd -g ${USER_GID} ${USER_NAME} && \
     chmod 1777 /tmp/.X11-unix /tmp/.ICE-unix && \
     chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}
 
+RUN USER_NAME=${USER_NAME} /opt/scripts/setup-fireshot.sh
+
 EXPOSE 8080
 VOLUME ["/home/arch"]
 

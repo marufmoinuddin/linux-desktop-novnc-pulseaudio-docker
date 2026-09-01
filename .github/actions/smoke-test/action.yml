@@ -318,4 +318,63 @@ runs:
         echo "PASS: no fatal errors in container logs"
 
         # (g) kill + remove handled by the cleanup trap
+        # (h) essential applications + screenshot utility + GUI launch check
+        ESSENTIALS_OK=""
+        for _ in $(seq 1 15); do
+          if docker exec "$CID" test -f /etc/flavor-essentials.txt 2>/dev/null; then ESSENTIALS_OK=1; break; fi
+          sleep 2
+        done
+        if [ -z "$ESSENTIALS_OK" ]; then
+          echo "FAIL: /etc/flavor-essentials.txt missing in image"
+          exit 1
+        fi
+        if ! docker exec "$CID" bash -lc 'set -e; while read -r bin; do
+          [ -n "$bin" ] || continue
+          if command -v "$bin" >/dev/null 2>&1; then echo "OK ${bin}"; else echo "FAIL: essential binary missing: ${bin}"; exit 1; fi
+        done < /etc/flavor-essentials.txt'; then
+          exit 1
+        fi
+        echo "PASS: all essential application binaries present"
+
+        SCREEN="$(docker exec "$CID" cat /etc/flavor-screenshot.txt 2>/dev/null || echo missing)"
+        if [ "$SCREEN" = "fireshot" ]; then
+          if docker exec "$CID" bash -lc 'test -f /opt/fireshot/fireshot.xpi && ls /home/*/.mozilla/firefox/*/extensions/*.xpi >/dev/null 2>&1'; then
+            echo "PASS: screenshot utility = FireShot (xpi + profile installed)"
+          else
+            echo "FAIL: FireShot fallback incomplete (xpi/profile missing)"
+            exit 1
+          fi
+        elif [ -n "$SCREEN" ] && [ "$SCREEN" != "missing" ]; then
+          if docker exec "$CID" bash -lc "command -v '$SCREEN' >/dev/null"; then
+            echo "PASS: screenshot utility = ${SCREEN}"
+          else
+            echo "FAIL: screenshot utility binary ${SCREEN} missing"
+            exit 1
+          fi
+        else
+          echo "FAIL: /etc/flavor-screenshot.txt missing or unreadable"
+          exit 1
+        fi
+
+        # One representative GUI app launches on :99 (catches missing display
+        # integration without being a full session test).
+        docker exec -i -u "$RUN_USER" -e DISPLAY=:99 -e "HOME=/home/${RUN_USER}" "$CID" bash -s <<'APPEOF'
+        set -e
+        APP=""
+        for a in xfce4-terminal konsole kgx gnome-console; do
+          if command -v "$a" >/dev/null 2>&1; then APP="$a"; break; fi
+        done
+        [ -n "$APP" ] || { echo "WARN: no launcher app found; skipping GUI launch"; exit 0; }
+        "$APP" >/dev/null 2>&1 &
+        PID=$!
+        sleep 3
+        if kill -0 "$PID" 2>/dev/null; then
+          echo "PASS: ${APP} launched on :99"
+          kill "$PID" 2>/dev/null || true
+        else
+          echo "FAIL: ${APP} exited within 3s on :99"
+          exit 1
+        fi
+        APPEOF
+
         echo "==> Smoke test passed; removing container ${CID}"
