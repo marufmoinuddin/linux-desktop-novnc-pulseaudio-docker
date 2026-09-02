@@ -54,15 +54,10 @@ if [ -n "${CHECK_ACC}" ]; then
   fi
 fi
 
-# Session binary: Arch's GNOME 50 cannot run an X11 session (Wayland-only
-# mutter + systemd-required gnome-session), so the arch-gnome flavor installs
-# Cinnamon (GNOME-3-derived, X11-native). Pick it automatically when present;
-# Ubuntu/Fedora keep the real gnome-session.
+# Session binary: real GNOME session. (The arch-gnome flavor was dropped —
+# Arch GNOME 50 is Wayland-only + systemd-required and cannot run under
+# noVNC/X11; Ubuntu/Fedora keep the real gnome-session here.)
 SESSION_BIN="gnome-session --session=gnome"
-if command -v cinnamon-session >/dev/null 2>&1; then
-  SESSION_BIN="cinnamon-session"
-  echo "[start-gnome] using Cinnamon session (GNOME 50 is Wayland-only on this distro)" >&2
-fi
 
 # GNOME 48+ (Arch's gnome-session 50) REQUIRES a systemd user manager —
 # without it, gnome-session aborts with:

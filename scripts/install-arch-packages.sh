@@ -62,26 +62,12 @@ case "${DE}" in
       polkit-kde-agent gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
     ;;
   gnome)
-    # GNOME 50 (Arch) is Wayland-only and gnome-session requires a systemd
-    # user session — neither works in an unprivileged X11 container. Use
-    # Cinnamon (GNOME-3-derived, X11-native, no systemd requirement) as the
-    # session while keeping the full GNOME essential application set.
-    pacman -S --noconfirm --needed \
-      cinnamon gsettings-desktop-schemas \
-      gnome-console nautilus loupe evince file-roller gnome-text-editor gnome-screenshot \
-      gvfs xdg-utils xdg-user-dirs shared-mime-info noto-fonts
-    # Headless hardening (inert for Cinnamon but harmless): disable
-    # gsd-usb-protection where GSD exists (segfaults without the
-    # org.gnome.ScreenSaver provider; required-component crash-loop fails the
-    # session). The session file edit is guarded because Cinnamon may not
-    # ship gnome-session's session file.
-    rm -f /etc/xdg/autostart/org.gnome.SettingsDaemon.UsbProtection.desktop
-    rm -f /usr/lib/systemd/user/org.gnome.SettingsDaemon.UsbProtection.service \
-          /usr/lib/systemd/user/org.gnome.SettingsDaemon.UsbProtection.target
-    if [ -f /usr/share/gnome-session/sessions/gnome.session ]; then
-      sed -i 's/org\.gnome\.SettingsDaemon\.UsbProtection;//' \
-        /usr/share/gnome-session/sessions/gnome.session
-    fi
+    # The arch-gnome flavor is dropped: Arch GNOME 50 is Wayland-only
+    # (mutter) and gnome-session requires a systemd user session — neither
+    # works in an unprivileged X11 container. Fail fast instead of silently
+    # building an image that cannot show a desktop.
+    echo "ERROR: arch-gnome is dropped (GNOME 50 is Wayland-only); use kde or xfce" >&2
+    exit 1
     ;;
   xfce)
     pacman -S --noconfirm --needed \
