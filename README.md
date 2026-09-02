@@ -23,7 +23,7 @@ recommended for the desktop session.
 
 | OS \ DE | KDE | GNOME | Xfce |
 |---|---|---|---|
-| **Ubuntu 24.04** | `linux-desktop-novnc-pulseaudio-ubuntu-kde` | `linux-desktop-novnc-pulseaudio-ubuntu-gnome` | `linux-desktop-novnc-pulseaudio-ubuntu-xfce` |
+| **Ubuntu 24.04** | `linux-desktop-novnc-pulseaudio-ubuntu-kde` | _dropped — GNOME only on Fedora_ | `linux-desktop-novnc-pulseaudio-ubuntu-xfce` |
 | **Fedora 41** | `linux-desktop-novnc-pulseaudio-fedora-kde` | `linux-desktop-novnc-pulseaudio-fedora-gnome` | `linux-desktop-novnc-pulseaudio-fedora-xfce` |
 | **Arch Linux** | `linux-desktop-novnc-pulseaudio-arch-kde` | _dropped — GNOME 50 is Wayland-only_ | `linux-desktop-novnc-pulseaudio-arch-xfce` |
 
@@ -32,7 +32,7 @@ recommended for the desktop session.
 | Workflow | Status |
 |---|---|
 | ubuntu-kde | [![build-ubuntu-kde](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-kde.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-kde.yml) |
-| ubuntu-gnome | [![build-ubuntu-gnome](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-gnome.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-gnome.yml) |
+| _ubuntu-gnome (dropped — GNOME only on Fedora)_ | — |
 | ubuntu-xfce | [![build-ubuntu-xfce](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-xfce.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-ubuntu-xfce.yml) |
 | fedora-kde | [![build-fedora-kde](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-kde.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-kde.yml) |
 | fedora-gnome | [![build-fedora-gnome](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-gnome.yml/badge.svg)](https://github.com/marufmoinuddin/linux-desktop-novnc-pulseaudio-docker/actions/workflows/build-fedora-gnome.yml) |
@@ -56,7 +56,6 @@ Then open <http://localhost:8080> — noVNC loads and audio streams automaticall
 | Image | `docker run` example |
 |---|---|
 | ubuntu-kde | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-kde:latest` |
-| ubuntu-gnome | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-gnome:latest` |
 | ubuntu-xfce | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-ubuntu-xfce:latest` |
 | fedora-kde | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-fedora-kde:latest` |
 | fedora-gnome | `docker run -d --shm-size 1g -e VNC_PASSWD=secret -p 8080:8080 ghcr.io/marufmoinuddin/linux-desktop-novnc-pulseaudio-fedora-gnome:latest` |

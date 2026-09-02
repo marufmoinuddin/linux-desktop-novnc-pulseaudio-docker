@@ -54,9 +54,9 @@ if [ -n "${CHECK_ACC}" ]; then
   fi
 fi
 
-# Session binary: real GNOME session. (The arch-gnome flavor was dropped —
-# Arch GNOME 50 is Wayland-only + systemd-required and cannot run under
-# noVNC/X11; Ubuntu/Fedora keep the real gnome-session here.)
+# Session binary: real GNOME session. (Only the fedora-gnome flavor remains —
+# Arch GNOME 50 and Ubuntu GNOME were dropped; fedora-gnome keeps the real
+# gnome-session here.)
 SESSION_BIN="gnome-session --session=gnome"
 
 # GNOME 48+ (Arch's gnome-session 50) REQUIRES a systemd user manager —
